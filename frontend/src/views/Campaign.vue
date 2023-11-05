@@ -48,8 +48,7 @@
     <b-loading :active="loading.campaigns"></b-loading>
 
     <b-tabs type="is-boxed" :animated="false" v-model="activeTab" @input="onTab">
-      <b-tab-item :label="$tc('globals.terms.campaign')" label-position="on-border"
-        value="campaign" icon="rocket-launch-outline">
+      <b-tab-item :label="$tc('globals.terms.campaign')" label-position="on-border" value="campaign" icon="rocket-launch-outline">
         <section class="wrap">
           <div class="columns">
             <div class="column is-7">
@@ -218,8 +217,7 @@
         </div>
       </b-tab-item><!-- content -->
 
-      <b-tab-item :label="$t('campaigns.archive')" icon="newspaper-variant-outline"
-        value="archive" :disabled="isNew">
+      <b-tab-item :label="$t('campaigns.archive')" icon="newspaper-variant-outline" value="archive" :disabled="isNew">
         <section class="wrap">
           <b-field :label="$t('campaigns.archiveEnable')" data-cy="btn-archive"
             :message="$t('campaigns.archiveHelp')">

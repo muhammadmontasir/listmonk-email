@@ -1,22 +1,27 @@
 <template>
   <div id="app">
     <b-navbar :fixed-top="true" v-if="$root.isLoaded">
-        <template #brand>
-          <div class="logo">
-            <router-link :to="{name: 'dashboard'}">
-              <img class="full" src="@/assets/logo.svg"/>
-              <img class="favicon" src="@/assets/favicon.png"/>
-            </router-link>
-          </div>
-        </template>
-        <template #end>
-          <navigation v-if="isMobile" :isMobile="isMobile"
-            :activeItem="activeItem" :activeGroup="activeGroup" @toggleGroup="toggleGroup"
-            @doLogout="doLogout" />
-          <b-navbar-item v-else tag="div">
-            <a href="#" @click.prevent="doLogout">{{ $t('users.logout') }}</a>
-          </b-navbar-item>
-        </template>
+      <template #brand>
+        <div class="logo">
+          <router-link :to="{ name: 'dashboard' }">
+            <img class="full" src="@/assets/logo.svg" />
+            <img class="favicon" src="@/assets/favicon.png" />
+          </router-link>
+        </div>
+      </template>
+      <template #end>
+        <navigation
+          v-if="isMobile"
+          :isMobile="isMobile"
+          :activeItem="activeItem"
+          :activeGroup="activeGroup"
+          @toggleGroup="toggleGroup"
+          @doLogout="doLogout"
+        />
+        <b-navbar-item v-else tag="div">
+          <a href="#" @click.prevent="doLogout">{{ $t("users.logout") }}</a>
+        </b-navbar-item>
+      </template>
     </b-navbar>
 
     <div class="wrapper" v-if="$root.isLoaded">
@@ -30,8 +35,13 @@
         >
           <div>
             <b-menu :accordion="false">
-              <navigation v-if="!isMobile" :isMobile="isMobile"
-                :activeItem="activeItem" :activeGroup="activeGroup" @toggleGroup="toggleGroup" />
+              <navigation
+                v-if="!isMobile"
+                :isMobile="isMobile"
+                :activeItem="activeItem"
+                :activeGroup="activeGroup"
+                @toggleGroup="toggleGroup"
+              />
             </b-menu>
           </div>
         </b-sidebar>
@@ -42,15 +52,18 @@
       <div class="main">
         <div class="global-notices" v-if="serverConfig.needs_restart || serverConfig.update">
           <div v-if="serverConfig.needs_restart" class="notification is-danger">
-            {{ $t('settings.needsRestart') }}
-             &mdash;
-            <b-button class="is-primary" size="is-small"
-              @click="$utils.confirm($t('settings.confirmRestart'), reloadApp)">
-                {{ $t('settings.restart') }}
+            {{ $t("settings.needsRestart") }}
+            &mdash;
+            <b-button
+              class="is-primary"
+              size="is-small"
+              @click="$utils.confirm($t('settings.confirmRestart'), reloadApp)"
+            >
+              {{ $t("settings.restart") }}
             </b-button>
           </div>
           <div v-if="serverConfig.update" class="notification is-success">
-            {{ $t('settings.updateAvailable', { version: serverConfig.update.version }) }}
+            {{ $t("settings.updateAvailable", { version: serverConfig.update.version }) }}
             <a :href="serverConfig.update.url" target="_blank">View</a>
           </div>
         </div>
@@ -64,14 +77,14 @@
 </template>
 
 <script>
-import Vue from 'vue';
-import { mapState } from 'vuex';
-import { uris } from './constants';
+import Vue from "vue";
+import { mapState } from "vuex";
+import { uris } from "./constants";
 
-import Navigation from './components/Navigation.vue';
+import Navigation from "./components/Navigation.vue";
 
 export default Vue.extend({
-  name: 'App',
+  name: "App",
 
   components: {
     Navigation,
@@ -107,7 +120,7 @@ export default Vue.extend({
 
     reloadApp() {
       this.$api.reloadApp().then(() => {
-        this.$utils.toast('Reloading app ...');
+        this.$utils.toast("Reloading app ...");
 
         // Poll until there's a 200 response, waiting for the app
         // to restart and come back up.
@@ -123,8 +136,8 @@ export default Vue.extend({
     doLogout() {
       const http = new XMLHttpRequest();
 
-      const u = uris.root.substr(-1) === '/' ? uris.root : `${uris.root}/`;
-      http.open('get', `${u}api/logout`, false, 'logout_non_user', 'logout_non_user');
+      const u = uris.root.substr(-1) === "/" ? uris.root : `${uris.root}/`;
+      http.open("get", `${u}api/logout`, false, "logout_non_user", "logout_non_user");
       http.onload = () => {
         document.location.href = uris.root;
       };
@@ -145,16 +158,16 @@ export default Vue.extend({
         numEv += 1;
 
         const d = JSON.parse(e.data);
-        if (d && d.type === 'error') {
+        if (d && d.type === "error") {
           const msg = reMatchLog.exec(d.message.trim());
-          this.$utils.toast(msg[2], 'is-danger', null, true);
+          this.$utils.toast(msg[2], "is-danger", null, true);
         }
       };
     },
   },
 
   computed: {
-    ...mapState(['serverConfig']),
+    ...mapState(["serverConfig"]),
 
     version() {
       return process.env.VUE_APP_VERSION;
@@ -168,9 +181,9 @@ export default Vue.extend({
   mounted() {
     // Lists is required across different views. On app load, fetch the lists
     // and have them in the store.
-    this.$api.getLists({ minimal: true, per_page: 'all' });
+    this.$api.getLists({ minimal: true, per_page: "all" });
 
-    window.addEventListener('resize', () => {
+    window.addEventListener("resize", () => {
       this.windowWidth = window.innerWidth;
     });
 
@@ -180,6 +193,6 @@ export default Vue.extend({
 </script>
 
 <style lang="scss">
-  @import "assets/style.scss";
-  @import "assets/icons/fontello.css";
+@import "assets/style.scss";
+@import "assets/icons/fontello.css";
 </style>

@@ -1,0 +1,6 @@
+{
+  "dependencies": {
+    "vue-email-editor": "^1.0.0",
+    "vue-i18n": "8"
+  }
+}

@@ -1,86 +1,145 @@
 <template>
   <section>
-    <form @submit.prevent="onSubmit">
-      <div class="modal-card content template-modal-content" style="width: auto">
-        <header class="modal-card-head">
-            <b-button @click="previewTemplate"
-              class="is-pulled-right" type="is-primary"
-              icon-left="file-find-outline">{{ $t('templates.preview') }}</b-button>
+    <header class="modal-card-head">
+      <b-button
+        @click="previewTemplate"
+        class="is-pulled-right"
+        type="is-primary"
+        icon-left="file-find-outline"
+        >{{ $t("templates.preview") }}</b-button
+      >
 
-            <template v-if="isEditing">
-              <h4>{{ data.name }}</h4>
-              <p class="has-text-grey is-size-7">
-                {{ $t('globals.fields.id') }}: <span data-cy="id">{{ data.id }}</span>
-              </p>
-            </template>
-            <h4 v-else>{{ $t('templates.newTemplate') }}</h4>
-        </header>
-        <section expanded class="modal-card-body">
-          <div class="columns">
-            <div class="column is-9">
-              <b-field :label="$t('globals.fields.name')" label-position="on-border">
-                <b-input :maxlength="200" :ref="'focus'" v-model="form.name" name="name"
-                    :placeholder="$t('globals.fields.name')" required />
-              </b-field>
-            </div>
-            <div class="column is-3">
-              <b-field :label="$t('globals.fields.type')" label-position="on-border">
-                <b-select v-model="form.type" :disabled="isEditing" expanded>
-                  <option value="campaign">{{ $tc('globals.terms.campaign') }}</option>
-                  <option value="tx">{{ $tc('globals.terms.tx') }}</option>
-                </b-select>
-              </b-field>
-            </div>
-          </div>
-          <div class="columns" v-if="form.type === 'tx'">
-            <div class="column is-12">
-              <b-field :label="$t('templates.subject')" label-position="on-border">
-                <b-input :maxlength="200" :ref="'focus'" v-model="form.subject" name="name"
-                  :placeholder="$t('templates.subject')" required />
-              </b-field>
-            </div>
+      <template v-if="isEditing">
+        <h4>{{ data.name }}</h4>
+        <p class="has-text-grey is-size-7">
+          {{ $t("globals.fields.id") }}: <span data-cy="id">{{ data.id }}</span>
+        </p>
+      </template>
+      <h4 v-else>{{ $t("templates.newTemplate") }}</h4>
+    </header>
+    <b-tabs type="is-boxed" :animated="false" v-model="activeTab">
+      <b-tab-item label="Builder" icon="text" value="builder">
+        <div id="builder" class="container">
+          <div id="bar">
+            <h1>Email Template Editor(Demo)</h1>
+
+            <button v-on:click="saveDesign">Save Design</button>
+            <button v-on:click="exportHtml">Export HTML</button>
           </div>
 
-          <b-field v-if="form.body !== null"
-            :label="$t('templates.rawHTML')" label-position="on-border">
-            <html-editor v-model="form.body" name="body" />
-          </b-field>
-
-          <p class="is-size-7">
-            <template v-if="form.type === 'campaign'">
-              {{ $t('templates.placeholderHelp', { placeholder: egPlaceholder }) }}
-            </template>
-            <a target="_blank" href="https://listmonk.app/docs/templating">
-              {{ $t('globals.buttons.learnMore') }}
-            </a>
-          </p>
-        </section>
+          <EmailEditor
+            :appearance="appearance"
+            :min-height="minHeight"
+            :project-id="projectId"
+            :locale="locale"
+            :tools="tools"
+            :options="options"
+            ref="emailEditor"
+            v-on:load="editorLoaded"
+            v-on:ready="editorReady"
+            style="height: 100vh"
+          />
+        </div>
         <footer class="modal-card-foot has-text-right">
-            <b-button @click="$parent.close()">{{ $t('globals.buttons.close') }}</b-button>
-            <b-button native-type="submit" type="is-primary"
-            :loading="loading.templates">{{ $t('globals.buttons.save') }}</b-button>
+          <b-button @click="$parent.close()">{{ $t("globals.buttons.close") }}</b-button>
+          <b-button native-type="submit" type="is-primary" :loading="loading.templates">{{
+            $t("globals.buttons.save")
+          }}</b-button>
         </footer>
-      </div>
-    </form>
-    <campaign-preview v-if="previewItem"
-      type='template'
+      </b-tab-item>
+      <b-tab-item label="Html" icon="text" value="html">
+        <form @submit.prevent="onSubmit">
+          <div class="modal-card content template-modal-content" style="width: auto">
+            <section expanded class="modal-card-body">
+              <div class="columns">
+                <div class="column is-9">
+                  <b-field :label="$t('globals.fields.name')" label-position="on-border">
+                    <b-input
+                      :maxlength="200"
+                      :ref="'focus'"
+                      v-model="form.name"
+                      name="name"
+                      :placeholder="$t('globals.fields.name')"
+                      required
+                    />
+                  </b-field>
+                </div>
+                <div class="column is-3">
+                  <b-field :label="$t('globals.fields.type')" label-position="on-border">
+                    <b-select v-model="form.type" :disabled="isEditing" expanded>
+                      <option value="campaign">{{ $tc("globals.terms.campaign") }}</option>
+                      <option value="tx">{{ $tc("globals.terms.tx") }}</option>
+                    </b-select>
+                  </b-field>
+                </div>
+              </div>
+              <div class="columns" v-if="form.type === 'tx'">
+                <div class="column is-12">
+                  <b-field :label="$t('templates.subject')" label-position="on-border">
+                    <b-input
+                      :maxlength="200"
+                      :ref="'focus'"
+                      v-model="form.subject"
+                      name="name"
+                      :placeholder="$t('templates.subject')"
+                      required
+                    />
+                  </b-field>
+                </div>
+              </div>
+
+              <b-field
+                v-if="form.body !== null"
+                :label="$t('templates.rawHTML')"
+                label-position="on-border"
+              >
+                <html-editor v-model="form.body" name="body" />
+              </b-field>
+
+              <p class="is-size-7">
+                <template v-if="form.type === 'campaign'">
+                  {{ $t("templates.placeholderHelp", { placeholder: egPlaceholder }) }}
+                </template>
+                <a target="_blank" href="https://listmonk.app/docs/templating">
+                  {{ $t("globals.buttons.learnMore") }}
+                </a>
+              </p>
+            </section>
+            <footer class="modal-card-foot has-text-right">
+              <b-button @click="$parent.close()">{{ $t("globals.buttons.close") }}</b-button>
+              <b-button native-type="submit" type="is-primary" :loading="loading.templates">{{
+                $t("globals.buttons.save")
+              }}</b-button>
+            </footer>
+          </div>
+        </form>
+      </b-tab-item>
+    </b-tabs>
+
+    <campaign-preview
+      v-if="previewItem"
+      type="template"
       :title="previewItem.name"
       :templateType="previewItem.type"
       :body="form.body"
-      @close="closePreview"></campaign-preview>
+      @close="closePreview"
+    ></campaign-preview>
   </section>
 </template>
 
 <script>
-import Vue from 'vue';
-import { mapState } from 'vuex';
-import CampaignPreview from '../components/CampaignPreview.vue';
-import HTMLEditor from '../components/HTMLEditor.vue';
+import Vue from "vue";
+import { mapState } from "vuex";
+import CampaignPreview from "../components/CampaignPreview.vue";
+import HTMLEditor from "../components/HTMLEditor.vue";
+import { EmailEditor } from "vue-email-editor";
+import sample from "../emailData/mailTemplate.json";
 
 export default Vue.extend({
   components: {
     CampaignPreview,
-    'html-editor': HTMLEditor,
+    "html-editor": HTMLEditor,
+    EmailEditor,
   },
 
   props: {
@@ -90,16 +149,35 @@ export default Vue.extend({
 
   data() {
     return {
+      activeTab: "builder",
       // Binds form input values.
       form: {
-        name: '',
-        subject: '',
-        type: 'campaign',
-        optin: '',
+        name: "",
+        subject: "",
+        type: "campaign",
+        optin: "",
         body: null,
       },
       previewItem: null,
       egPlaceholder: '{{ template "content" . }}',
+      minHeight: "2000px",
+      locale: "en",
+      projectId: 0, // replace with your project id
+      tools: {
+        // disable image tool
+        image: {
+          enabled: false,
+        },
+      },
+      options: {},
+      appearance: {
+        theme: "light",
+        panels: {
+          tools: {
+            dock: "left",
+          },
+        },
+      },
     };
   },
 
@@ -131,9 +209,9 @@ export default Vue.extend({
       };
 
       this.$api.createTemplate(data).then((d) => {
-        this.$emit('finished');
+        this.$emit("finished");
         this.$parent.close();
-        this.$utils.toast(this.$t('globals.messages.created', { name: d.name }));
+        this.$utils.toast(this.$t("globals.messages.created", { name: d.name }));
       });
     },
 
@@ -147,15 +225,35 @@ export default Vue.extend({
       };
 
       this.$api.updateTemplate(data).then((d) => {
-        this.$emit('finished');
+        this.$emit("finished");
         this.$parent.close();
         this.$utils.toast(`'${d.name}' updated`);
+      });
+    },
+
+    editorLoaded() {
+      console.log("editorLoaded");
+      this.$refs.emailEditor.editor.loadDesign(sample);
+    },
+    // called when the editor has finished loading
+    editorReady() {
+      console.log("editorReady");
+    },
+    saveDesign() {
+      this.$refs.emailEditor.editor.saveDesign((design) => {
+        console.log("saveDesign", design);
+      });
+    },
+    exportHtml() {
+      this.$refs.emailEditor.editor.exportHtml((data) => {
+        console.log("exportHtml", data, data.html);
+        this.form.body = data.html;
       });
     },
   },
 
   computed: {
-    ...mapState(['loading']),
+    ...mapState(["loading"]),
   },
 
   mounted() {
@@ -167,3 +265,62 @@ export default Vue.extend({
   },
 });
 </script>
+
+<style lang="scss">
+.builder-container {
+  display: flex;
+  flex-wrap: wrap;
+}
+
+.builder-column {
+  flex: 1;
+  margin: 10px;
+  padding: 20px;
+  border: 1px solid #ccc;
+}
+
+.builder-section {
+  height: 200px; /* Set the height as needed */
+  overflow-y: auto; /* Enable vertical scrolling if content overflows */
+}
+
+#example {
+  height: 100%;
+}
+
+#example .container {
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  height: 100%;
+}
+
+#bar {
+  flex: 1;
+  background-color: #0055d4;
+  color: #fff;
+  padding: 10px;
+  display: flex;
+  max-height: 40px;
+}
+
+#bar h1 {
+  flex: 1;
+  font-size: 16px;
+  text-align: left;
+}
+
+#bar button {
+  flex: 1;
+  padding: 4px;
+  margin-left: 10px;
+  font-size: 14px;
+  font-weight: bold;
+  background-color: hsl(0, 0%, 86%);
+  color: hsl(0, 0%, 4%);
+  border: 0px;
+  max-width: 150px;
+  cursor: pointer;
+  height: 28px;
+}
+</style>
