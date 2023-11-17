@@ -81,7 +81,23 @@
     </template>
 
     <!-- raw html editor //-->
-    <html-editor v-if="form.format === 'html'" v-model="form.body" />
+
+    <template v-if="form.format === 'html'">
+      <div id="builder" class="container">
+        <EmailEditor
+          :appearance="appearance"
+          :min-height="minHeight"
+          :project-id="projectId"
+          :locale="locale"
+          :tools="tools"
+          :options="options"
+          ref="emailEditor"
+          v-on:load="editorLoaded"
+          v-on:ready="editorReady"
+          style="height: 100vh"
+        />
+      </div>
+    </template>
 
     <!-- plain text / markdown editor //-->
     <b-input v-if="form.format === 'plain' || form.format === 'markdown'"
@@ -146,6 +162,8 @@ import CampaignPreview from './CampaignPreview.vue';
 import HTMLEditor from './HTMLEditor.vue';
 import Media from '../views/Media.vue';
 import { colors, uris } from '../constants';
+import { EmailEditor } from "vue-email-editor";
+import sample from "../emailData/mailTemplate.json";
 
 const turndown = new TurndownService();
 
@@ -168,11 +186,13 @@ export default {
     Media,
     CampaignPreview,
     'html-editor': HTMLEditor,
+    EmailEditor,
     TinyMce,
   },
 
   props: {
     id: Number,
+    uuid: String,
     title: String,
     body: String,
     contentType: String,
@@ -207,6 +227,24 @@ export default {
         radioFormat: this.contentType,
       },
 
+      minHeight: "1000px",
+      locale: "en",
+      projectId: 0,
+      tools: {
+        image: {
+          enabled: true,
+        },
+      },
+      options: {},
+      appearance: {
+        theme: "light",
+        panels: {
+          tools: {
+            dock: "left",
+          },
+        },
+      },
+
       // Last position of the cursor in the editor before the media popup
       // was opened. This is used to insert media on selection from the poup
       // where the caret may be lost.
@@ -215,6 +253,39 @@ export default {
   },
 
   methods: {
+    editorLoaded() {
+      console.log("editorLoaded");
+      this.$refs.emailEditor.editor.loadDesign(sample);
+    },
+    // called when the editor has finished loading
+    editorReady() {
+      console.log("editorReady");
+    },
+
+    saveDesign() {
+      this.$refs.emailEditor.editor.saveDesign((design) => {
+        // console.log("saveDesign", design, typeof design, JSON.stringify(design, null, 2));
+        // const fs = require('fs');
+
+        const jsonData = JSON.stringify(design, null, 2);
+
+        console.log('jsonData', jsonData);
+        
+      });
+    },
+
+    async exportHtml() {
+      return new Promise((resolve, reject) => {
+        this.$refs.emailEditor.editor.exportHtml((data) => {
+          // console.log("exportHtml", data);
+          // console.log("exportHtml", data.design);
+          this.saveDesign();
+          this.form.body = data.html;
+          resolve();
+        });
+      });
+    },
+
     initRichtextEditor() {
       const { lang } = this.serverConfig;
 
@@ -401,7 +472,11 @@ export default {
       this.$emit('input', { contentType: this.form.format, body: this.form.body });
     },
 
-    onTogglePreview() {
+    async onTogglePreview() {
+      if (this.form.format === 'html') {
+        await this.exportHtml();
+      }
+
       this.isPreviewing = !this.isPreviewing;
     },
 
@@ -508,3 +583,21 @@ export default {
   },
 };
 </script>
+<style lang="scss">
+.builder-container {
+  display: flex;
+  flex-wrap: wrap;
+}
+
+.builder-column {
+  flex: 1;
+  margin: 10px;
+  padding: 20px;
+  border: 1px solid #ccc;
+}
+
+.builder-section {
+  height: 200px; /* Set the height as needed */
+  overflow-y: auto; /* Enable vertical scrolling if content overflows */
+}
+</style>

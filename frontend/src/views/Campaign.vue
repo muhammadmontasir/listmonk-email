@@ -176,6 +176,7 @@
           v-model="form.content"
           :id="data.id"
           :title="data.name"
+          :uuid="data.uuid"
           :templateId="form.templateId"
           :contentType="data.contentType"
           :body="data.body"
