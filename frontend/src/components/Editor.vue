@@ -244,7 +244,6 @@ export default {
           },
         },
       },
-
       // Last position of the cursor in the editor before the media popup
       // was opened. This is used to insert media on selection from the poup
       // where the caret may be lost.
