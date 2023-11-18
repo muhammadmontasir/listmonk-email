@@ -77,14 +77,14 @@
 </template>
 
 <script>
-import Vue from "vue";
-import { mapState } from "vuex";
-import { uris } from "./constants";
+import Vue from 'vue';
+import { mapState } from 'vuex';
+import { uris } from './constants';
 
-import Navigation from "./components/Navigation.vue";
+import Navigation from './components/Navigation.vue';
 
 export default Vue.extend({
-  name: "App",
+  name: 'App',
 
   components: {
     Navigation,
@@ -120,7 +120,7 @@ export default Vue.extend({
 
     reloadApp() {
       this.$api.reloadApp().then(() => {
-        this.$utils.toast("Reloading app ...");
+        this.$utils.toast('Reloading app ...');
 
         // Poll until there's a 200 response, waiting for the app
         // to restart and come back up.
@@ -136,8 +136,8 @@ export default Vue.extend({
     doLogout() {
       const http = new XMLHttpRequest();
 
-      const u = uris.root.substr(-1) === "/" ? uris.root : `${uris.root}/`;
-      http.open("get", `${u}api/logout`, false, "logout_non_user", "logout_non_user");
+      const u = uris.root.substr(-1) === '/' ? uris.root : `${uris.root}/`;
+      http.open('get', `${u}api/logout`, false, 'logout_non_user', 'logout_non_user');
       http.onload = () => {
         document.location.href = uris.root;
       };
@@ -158,16 +158,16 @@ export default Vue.extend({
         numEv += 1;
 
         const d = JSON.parse(e.data);
-        if (d && d.type === "error") {
+        if (d && d.type === 'error') {
           const msg = reMatchLog.exec(d.message.trim());
-          this.$utils.toast(msg[2], "is-danger", null, true);
+          this.$utils.toast(msg[2], 'is-danger', null, true);
         }
       };
     },
   },
 
   computed: {
-    ...mapState(["serverConfig"]),
+    ...mapState(['serverConfig']),
 
     version() {
       return process.env.VUE_APP_VERSION;
@@ -181,9 +181,9 @@ export default Vue.extend({
   mounted() {
     // Lists is required across different views. On app load, fetch the lists
     // and have them in the store.
-    this.$api.getLists({ minimal: true, per_page: "all" });
+    this.$api.getLists({ minimal: true, per_page: 'all' });
 
-    window.addEventListener("resize", () => {
+    window.addEventListener('resize', () => {
       this.windowWidth = window.innerWidth;
     });
 

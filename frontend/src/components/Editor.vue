@@ -157,13 +157,13 @@ import 'tinymce/plugins/visualblocks';
 import 'tinymce/plugins/visualchars';
 import 'tinymce/plugins/wordcount';
 import TinyMce from '@tinymce/tinymce-vue';
+import { EmailEditor } from 'vue-email-editor';
 
 import CampaignPreview from './CampaignPreview.vue';
 import HTMLEditor from './HTMLEditor.vue';
 import Media from '../views/Media.vue';
 import { colors, uris } from '../constants';
-import { EmailEditor } from "vue-email-editor";
-import sample from "../emailData/mailTemplate.json";
+import sample from '../emailData/mailTemplate.json';
 
 const turndown = new TurndownService();
 
@@ -227,8 +227,8 @@ export default {
         radioFormat: this.contentType,
       },
 
-      minHeight: "1000px",
-      locale: "en",
+      minHeight: '1000px',
+      locale: 'en',
       projectId: 0,
       tools: {
         image: {
@@ -237,10 +237,10 @@ export default {
       },
       options: {},
       appearance: {
-        theme: "light",
+        theme: 'light',
         panels: {
           tools: {
-            dock: "left",
+            dock: 'left',
           },
         },
       },
@@ -253,31 +253,28 @@ export default {
 
   methods: {
     editorLoaded() {
-      console.log("editorLoaded");
+      console.log('editorLoaded');
       this.$refs.emailEditor.editor.loadDesign(sample);
     },
     // called when the editor has finished loading
     editorReady() {
-      console.log("editorReady");
+      console.log('editorReady');
     },
 
     saveDesign() {
       this.$refs.emailEditor.editor.saveDesign((design) => {
-        // console.log("saveDesign", design, typeof design, JSON.stringify(design, null, 2));
+        // console.log('saveDesign', design, typeof design, JSON.stringify(design, null, 2));
         // const fs = require('fs');
-
         const jsonData = JSON.stringify(design, null, 2);
-
         console.log('jsonData', jsonData);
-        
       });
     },
 
     async exportHtml() {
-      return new Promise((resolve, reject) => {
+      return new Promise((resolve) => {
         this.$refs.emailEditor.editor.exportHtml((data) => {
-          // console.log("exportHtml", data);
-          // console.log("exportHtml", data.design);
+          // console.log('exportHtml', data);
+          // console.log('exportHtml', data.design);
           this.saveDesign();
           this.form.body = data.html;
           resolve();

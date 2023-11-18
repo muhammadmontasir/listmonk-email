@@ -9,7 +9,7 @@
         </div>
         <section expanded class="modal-card-body preview">
           <b-loading :active="isLoading" :is-full-page="false"></b-loading>
-          <form v-if="body" method="post" :action="previewURL" target="iframe" ref="form"> 
+          <form v-if="body" method="post" :action="previewURL" target="iframe" ref="form">
             <input type="hidden" name="template_id" :value="templateId" />
             <input type="hidden" name="content_type" :value="contentType" />
             <input type="hidden" name="template_type" :value="templateType" />
@@ -34,10 +34,10 @@
 </template>
 
 <script>
-import { uris } from "../constants";
+import { uris } from '../constants';
 
 export default {
-  name: "CampaignPreview",
+  name: 'CampaignPreview',
 
   props: {
     // Template or campaign ID.
@@ -67,13 +67,13 @@ export default {
 
   methods: {
     close() {
-      this.$emit("close");
+      this.$emit('close');
       this.isVisible = false;
     },
 
     // On iframe load, kill the spinner.
     onLoaded(l) {
-      if (l.srcElement.contentWindow.location.href === "about:blank") {
+      if (l.srcElement.contentWindow.location.href === 'about:blank') {
         return;
       }
       this.isLoading = false;
@@ -82,11 +82,11 @@ export default {
 
   computed: {
     previewURL() {
-      let uri = "about:blank";
+      let uri = 'about:blank';
 
-      if (this.type === "campaign") {
+      if (this.type === 'campaign') {
         uri = uris.previewCampaign;
-      } else if (this.type === "template") {
+      } else if (this.type === 'template') {
         if (this.id) {
           uri = uris.previewTemplate;
         } else {
@@ -94,7 +94,7 @@ export default {
         }
       }
 
-      return uri.replace(":id", this.id);
+      return uri.replace(':id', this.id);
     },
   },
 

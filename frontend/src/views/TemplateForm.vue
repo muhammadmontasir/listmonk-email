@@ -82,7 +82,9 @@
             </p>
           </section>
           <footer class="modal-card-foot has-text-right">
-            <b-button @click="$parent.close(); onSubmit()">{{ $t("globals.buttons.close") }}</b-button>
+            <b-button @click="$parent.close(); onSubmit()">
+              {{ $t("globals.buttons.close") }}
+            </b-button>
             <b-button native-type="submit" type="is-primary" :loading="loading.templates">{{
               $t("globals.buttons.save")
             }}</b-button>
@@ -101,11 +103,11 @@
 </template>
 
 <script>
-import Vue from "vue";
-import { mapState } from "vuex";
-import CampaignPreview from "../components/CampaignPreview.vue";
-import { EmailEditor } from "vue-email-editor";
-import sample from "../emailData/mailTemplateContent.json";
+import Vue from 'vue';
+import { mapState } from 'vuex';
+import { EmailEditor } from 'vue-email-editor';
+import CampaignPreview from '../components/CampaignPreview.vue';
+import sample from '../emailData/mailTemplateContent.json';
 
 export default Vue.extend({
   components: {
@@ -120,18 +122,18 @@ export default Vue.extend({
 
   data() {
     return {
-      activeTab: "builder",
+      activeTab: 'builder',
       form: {
-        name: "",
-        subject: "",
-        type: "campaign",
-        optin: "",
+        name: '',
+        subject: '',
+        type: 'campaign',
+        optin: '',
         body: null,
       },
       previewItem: null,
       egPlaceholder: '{{ template "content" . }}',
-      minHeight: "1000px",
-      locale: "en",
+      minHeight: '1000px',
+      locale: 'en',
       projectId: 0,
       tools: {
         image: {
@@ -140,10 +142,10 @@ export default Vue.extend({
       },
       options: {},
       appearance: {
-        theme: "light",
+        theme: 'light',
         panels: {
           tools: {
-            dock: "left",
+            dock: 'left',
           },
         },
       },
@@ -152,25 +154,25 @@ export default Vue.extend({
 
   methods: {
     editorLoaded() {
-      console.log("editorLoaded");
+      console.log('editorLoaded');
       this.$refs.emailEditor.editor.loadDesign(sample);
     },
     // called when the editor has finished loading
     editorReady() {
-      console.log("editorReady");
+      console.log('editorReady');
     },
 
     saveDesign() {
       this.$refs.emailEditor.editor.saveDesign((design) => {
-        console.log("saveDesign", design);
+        console.log('saveDesign', design);
       });
     },
 
     async exportHtml() {
-      return new Promise((resolve, reject) => {
+      return new Promise((resolve) => {
         this.$refs.emailEditor.editor.exportHtml((data) => {
-          // console.log("exportHtml", data);
-          console.log("exportHtml", data.design);
+          // console.log('exportHtml', data);
+          console.log('exportHtml', data.design);
           this.form.body = data.html;
           resolve();
         });
@@ -208,9 +210,9 @@ export default Vue.extend({
       };
 
       this.$api.createTemplate(data).then((d) => {
-        this.$emit("finished");
+        this.$emit('finished');
         this.$parent.close();
-        this.$utils.toast(this.$t("globals.messages.created", { name: d.name }));
+        this.$utils.toast(this.$t('globals.messages.created', { name: d.name }));
       });
     },
 
@@ -224,15 +226,15 @@ export default Vue.extend({
       };
 
       this.$api.updateTemplate(data).then((d) => {
-        this.$emit("finished");
+        this.$emit('finished');
         this.$parent.close();
         this.$utils.toast(`'${d.name}' updated`);
       });
-    },    
+    },
   },
 
   computed: {
-    ...mapState(["loading"]),
+    ...mapState(['loading']),
   },
 
   mounted() {
