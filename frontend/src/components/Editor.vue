@@ -3,29 +3,6 @@
   <section class="editor">
     <div class="columns">
       <div class="column is-6">
-        <b-field label="Format">
-          <div>
-            <b-radio v-model="form.radioFormat"
-              @input="onFormatChange" :disabled="disabled" name="format"
-              native-value="richtext"
-              data-cy="check-richtext">{{ $t('campaigns.richText') }}</b-radio>
-
-            <b-radio v-model="form.radioFormat"
-              @input="onFormatChange" :disabled="disabled" name="format"
-              native-value="html"
-              data-cy="check-html">{{ $t('campaigns.rawHTML') }}</b-radio>
-
-            <b-radio v-model="form.radioFormat"
-              @input="onFormatChange" :disabled="disabled" name="format"
-              native-value="markdown"
-              data-cy="check-markdown">{{ $t('campaigns.markdown') }}</b-radio>
-
-            <b-radio v-model="form.radioFormat"
-              @input="onFormatChange" :disabled="disabled" name="format"
-              native-value="plain"
-              data-cy="check-plain">{{ $t('campaigns.plainText') }}</b-radio>
-          </div>
-        </b-field>
       </div>
       <div class="column is-6 has-text-right">
           <b-button @click="onTogglePreview" type="is-primary"
@@ -34,55 +11,7 @@
           </b-button>
       </div>
     </div>
-
-    <!-- wsywig //-->
-    <template v-if="isRichtextReady && form.format === 'richtext'">
-      <tiny-mce
-        v-model="form.body"
-        :disabled="disabled"
-        :init="richtextConf"
-      />
-
-      <b-modal scroll="keep" :width="1200"
-        :aria-modal="true" :active.sync="isRichtextSourceVisible">
-        <div>
-          <section expanded class="modal-card-body preview">
-            <html-editor v-model="richTextSourceBody" />
-          </section>
-          <footer class="modal-card-foot has-text-right">
-            <b-button @click="onFormatRichtextHTML">{{ $t('campaigns.formatHTML') }}</b-button>
-            <b-button @click="() => { this.isRichtextSourceVisible = false; }">
-              {{ $t('globals.buttons.close') }}
-            </b-button>
-            <b-button @click="onSaveRichTextSource" class="is-primary">
-              {{ $t('globals.buttons.save') }}
-            </b-button>
-          </footer>
-        </div>
-      </b-modal>
-
-      <b-modal scroll="keep" :width="750"
-        :aria-modal="true" :active.sync="isInsertHTMLVisible">
-        <div>
-          <section expanded class="modal-card-body preview">
-            <html-editor v-model="insertHTMLSnippet" />
-          </section>
-          <footer class="modal-card-foot has-text-right">
-            <b-button @click="onFormatRichtextHTML">{{ $t('campaigns.formatHTML') }}</b-button>
-            <b-button @click="() => { this.isInsertHTMLVisible = false; }">
-              {{ $t('globals.buttons.close') }}
-            </b-button>
-            <b-button @click="onInsertHTML" class="is-primary">
-              {{ $t('globals.buttons.insert') }}
-            </b-button>
-          </footer>
-        </div>
-      </b-modal>
-    </template>
-
-    <!-- raw html editor //-->
-
-    <template v-if="form.format === 'html'">
+    <template>
       <div id="builder" class="container">
         <EmailEditor
           :appearance="appearance"
@@ -99,18 +28,12 @@
       </div>
     </template>
 
-    <!-- plain text / markdown editor //-->
-    <b-input v-if="form.format === 'plain' || form.format === 'markdown'"
-      v-model="form.body" @input="onEditorChange"
-      type="textarea" name="content" ref="plainEditor" class="plain-editor" />
-
     <!-- campaign preview //-->
     <campaign-preview v-if="isPreviewing"
       @close="onTogglePreview"
       type="campaign"
       :id="id"
       :title="title"
-      :contentType="form.format"
       :templateId="templateId"
       :body="form.body"></campaign-preview>
 
@@ -127,45 +50,12 @@
 
 <script>
 import { mapState } from 'vuex';
-import TurndownService from 'turndown';
 import { indent } from 'indent.js';
-
-import 'tinymce';
-import 'tinymce/icons/default';
-import 'tinymce/themes/silver';
-import 'tinymce/skins/ui/oxide/skin.css';
-import 'tinymce/plugins/anchor';
-import 'tinymce/plugins/autoresize';
-import 'tinymce/plugins/autolink';
-import 'tinymce/plugins/charmap';
-import 'tinymce/plugins/colorpicker';
-import 'tinymce/plugins/contextmenu';
-import 'tinymce/plugins/emoticons';
-import 'tinymce/plugins/emoticons/js/emojis';
-import 'tinymce/plugins/fullscreen';
-import 'tinymce/plugins/help';
-import 'tinymce/plugins/hr';
-import 'tinymce/plugins/image';
-import 'tinymce/plugins/imagetools';
-import 'tinymce/plugins/link';
-import 'tinymce/plugins/lists';
-import 'tinymce/plugins/paste';
-import 'tinymce/plugins/searchreplace';
-import 'tinymce/plugins/table';
-import 'tinymce/plugins/textcolor';
-import 'tinymce/plugins/visualblocks';
-import 'tinymce/plugins/visualchars';
-import 'tinymce/plugins/wordcount';
-import TinyMce from '@tinymce/tinymce-vue';
 import { EmailEditor } from 'vue-email-editor';
-
 import CampaignPreview from './CampaignPreview.vue';
-import HTMLEditor from './HTMLEditor.vue';
 import Media from '../views/Media.vue';
 import { colors, uris } from '../constants';
 import sample from '../emailData/mailTemplate.json';
-
-const turndown = new TurndownService();
 
 // Map of listmonk language codes to corresponding TinyMCE language files.
 const LANGS = {
@@ -185,9 +75,8 @@ export default {
   components: {
     Media,
     CampaignPreview,
-    'html-editor': HTMLEditor,
     EmailEditor,
-    TinyMce,
+    // TinyMce,
   },
 
   props: {
@@ -236,6 +125,7 @@ export default {
         },
       },
       options: {},
+      displayMode: 'email',
       appearance: {
         theme: 'light',
         panels: {
@@ -263,8 +153,6 @@ export default {
 
     saveDesign() {
       this.$refs.emailEditor.editor.saveDesign((design) => {
-        // console.log('saveDesign', design, typeof design, JSON.stringify(design, null, 2));
-        // const fs = require('fs');
         const jsonData = JSON.stringify(design, null, 2);
         console.log('jsonData', jsonData);
       });
@@ -273,10 +161,9 @@ export default {
     async exportHtml() {
       return new Promise((resolve) => {
         this.$refs.emailEditor.editor.exportHtml((data) => {
-          // console.log('exportHtml', data);
-          // console.log('exportHtml', data.design);
           this.saveDesign();
           this.form.body = data.html;
+          this.onEditorChange();
           resolve();
         });
       });
@@ -469,10 +356,8 @@ export default {
     },
 
     async onTogglePreview() {
-      if (this.form.format === 'html') {
-        await this.exportHtml();
-      }
-
+      await this.exportHtml();
+      this.onEditorChange();
       this.isPreviewing = !this.isPreviewing;
     },
 
@@ -512,9 +397,9 @@ export default {
   computed: {
     ...mapState(['serverConfig']),
 
-    htmlFormat() {
-      return this.form.format;
-    },
+    // htmlFormat() {
+    //   return this.form.format;
+    // },
   },
 
   watch: {
@@ -542,40 +427,40 @@ export default {
       this.onEditorChange();
     },
 
-    htmlFormat(to, from) {
-      if ((from === 'richtext' || from === 'html') && to === 'plain') {
-        // richtext, html => plain
+    // htmlFormat(to, from) {
+    //   if ((from === 'richtext' || from === 'html') && to === 'plain') {
+    //     // richtext, html => plain
 
-        // Preserve line breaks when converting HTML to plaintext.
-        const d = document.createElement('div');
-        d.innerHTML = this.beautifyHTML(this.form.body);
-        this.$nextTick(() => {
-          this.form.body = this.trimLines(d.innerText.trim(), true);
-        });
-      } else if ((from === 'richtext' || from === 'html') && to === 'markdown') {
-        // richtext, html => markdown
-        this.form.body = turndown.turndown(this.form.body).replace(/\n\n+/ig, '\n\n');
-      } else if (from === 'plain' && (to === 'richtext' || to === 'html')) {
-        // plain => richtext, html
-        this.form.body = this.form.body.replace(/\n/ig, '<br>\n');
-      } else if (from === 'richtext' && to === 'html') {
-        // richtext => html
-        this.form.body = this.beautifyHTML(this.form.body);
-      } else if (from === 'markdown' && (to === 'richtext' || to === 'html')) {
-        // markdown => richtext, html.
-        this.$api.convertCampaignContent({
-          id: 1, body: this.form.body, from, to,
-        }).then((data) => {
-          this.form.body = this.beautifyHTML(data.trim());
-          // Update the HTML editor.
-          if (to === 'html') {
-            this.updateHTMLEditor();
-          }
-        });
-      }
+    //     // Preserve line breaks when converting HTML to plaintext.
+    //     const d = document.createElement('div');
+    //     d.innerHTML = this.beautifyHTML(this.form.body);
+    //     this.$nextTick(() => {
+    //       this.form.body = this.trimLines(d.innerText.trim(), true);
+    //     });
+    //   } else if ((from === 'richtext' || from === 'html') && to === 'markdown') {
+    //     // richtext, html => markdown
+    //     this.form.body = turndown.turndown(this.form.body).replace(/\n\n+/ig, '\n\n');
+    //   } else if (from === 'plain' && (to === 'richtext' || to === 'html')) {
+    //     // plain => richtext, html
+    //     this.form.body = this.form.body.replace(/\n/ig, '<br>\n');
+    //   } else if (from === 'richtext' && to === 'html') {
+    //     // richtext => html
+    //     this.form.body = this.beautifyHTML(this.form.body);
+    //   } else if (from === 'markdown' && (to === 'richtext' || to === 'html')) {
+    //     // markdown => richtext, html.
+    //     this.$api.convertCampaignContent({
+    //       id: 1, body: this.form.body, from, to,
+    //     }).then((data) => {
+    //       this.form.body = this.beautifyHTML(data.trim());
+    //       // Update the HTML editor.
+    //       if (to === 'html') {
+    //         this.updateHTMLEditor();
+    //       }
+    //     });
+    //   }
 
-      this.onEditorChange();
-    },
+    //   this.onEditorChange();
+    // },
   },
 };
 </script>
