@@ -35,7 +35,7 @@
       :id="id"
       :title="title"
       :templateId="templateId"
-      :body="form.body"></campaign-preview>
+      :body="form.htmlBody"></campaign-preview>
 
     <!-- image picker -->
     <b-modal scroll="keep" :aria-modal="true" :active.sync="isMediaVisible" :width="900">
@@ -54,22 +54,20 @@ import { indent } from 'indent.js';
 import { EmailEditor } from 'vue-email-editor';
 import CampaignPreview from './CampaignPreview.vue';
 import Media from '../views/Media.vue';
-import { colors, uris } from '../constants';
-import sample from '../emailData/mailTemplate.json';
 
 // Map of listmonk language codes to corresponding TinyMCE language files.
-const LANGS = {
-  'cs-cz': 'cs',
-  de: 'de',
-  es: 'es_419',
-  fr: 'fr_FR',
-  it: 'it_IT',
-  pl: 'pl',
-  pt: 'pt_PT',
-  'pt-BR': 'pt_BR',
-  ro: 'ro',
-  tr: 'tr',
-};
+// const LANGS = {
+//   'cs-cz': 'cs',
+//   de: 'de',
+//   es: 'es_419',
+//   fr: 'fr_FR',
+//   it: 'it_IT',
+//   pl: 'pl',
+//   pt: 'pt_PT',
+//   'pt-BR': 'pt_BR',
+//   ro: 'ro',
+//   tr: 'tr',
+// };
 
 export default {
   components: {
@@ -80,6 +78,7 @@ export default {
   },
 
   props: {
+    value: Object,
     id: Number,
     uuid: String,
     title: String,
@@ -106,8 +105,9 @@ export default {
       richtextConf: {},
       richTextSourceBody: '',
       form: {
-        body: '',
+        body: this.value.body || '',
         format: this.contentType,
+        htmlBody: '',
 
         // Model bound to the checkboxes. This changes on click of the radio,
         // but is reverted by the change handler if the user cancels the
@@ -143,18 +143,17 @@ export default {
 
   methods: {
     editorLoaded() {
-      console.log('editorLoaded');
-      this.$refs.emailEditor.editor.loadDesign(sample);
+      this.$refs.emailEditor.editor.loadDesign(JSON.parse(this.value.body));
     },
     // called when the editor has finished loading
     editorReady() {
-      console.log('editorReady');
+      // console.log('editorReady');
     },
 
     saveDesign() {
       this.$refs.emailEditor.editor.saveDesign((design) => {
         const jsonData = JSON.stringify(design, null, 2);
-        console.log('jsonData', jsonData);
+        this.form.body = jsonData;
       });
     },
 
@@ -162,196 +161,16 @@ export default {
       return new Promise((resolve) => {
         this.$refs.emailEditor.editor.exportHtml((data) => {
           this.saveDesign();
-          this.form.body = data.html;
+          this.form.htmlBody = data.html;
           this.onEditorChange();
           resolve();
         });
       });
     },
 
-    initRichtextEditor() {
-      const { lang } = this.serverConfig;
-
-      this.richtextConf = {
-        init_instance_callback: () => { this.isReady = true; },
-        urlconverter_callback: this.onEditorURLConvert,
-
-        setup: (editor) => {
-          editor.on('init', () => {
-            editor.focus();
-            this.onEditorDialogOpen(editor);
-          });
-
-          // Custom HTML editor.
-          editor.ui.registry.addButton('html', {
-            icon: 'sourcecode',
-            tooltip: 'Source code',
-            onAction: this.onRichtextViewSource,
-          });
-
-          editor.ui.registry.addButton('insert-html', {
-            icon: 'code-sample',
-            tooltip: 'Insert HTML',
-            onAction: this.onOpenInsertHTML,
-          });
-        },
-
-        browser_spellcheck: true,
-        min_height: 500,
-        toolbar_sticky: true,
-        entity_encoding: 'raw',
-        convert_urls: true,
-        plugins: [
-          'anchor', 'autoresize', 'autolink', 'charmap', 'emoticons', 'fullscreen',
-          'help', 'hr', 'image', 'imagetools', 'link', 'lists', 'paste', 'searchreplace',
-          'table', 'visualblocks', 'visualchars', 'wordcount',
-        ],
-        toolbar: `undo redo | formatselect styleselect fontsizeselect |
-                  bold italic underline strikethrough forecolor backcolor subscript superscript |
-                  alignleft aligncenter alignright alignjustify |
-                  bullist numlist table image insert-html | outdent indent | link hr removeformat |
-                  html fullscreen help`,
-        fontsize_formats: '10px 11px 12px 14px 15px 16px 18px 24px 36px',
-        skin: false,
-        content_css: false,
-        content_style: `
-          body { font-family: 'Inter', sans-serif; font-size: 15px; }
-          img { max-width: 100%; }
-          a { color: ${colors.primary}; }
-          table, td { border-color: #ccc;}
-        `,
-
-        language: LANGS[lang] || null,
-        language_url: LANGS[lang] ? `${uris.static}/tinymce/lang/${LANGS[lang]}.js` : null,
-
-        file_picker_types: 'image',
-        file_picker_callback: (callback) => {
-          this.isMediaVisible = true;
-          this.runTinyMceImageCallback = callback;
-        },
-      };
-
-      this.isRichtextReady = true;
-    },
-
-    onFormatChange(format) {
-      if (this.form.body.trim() === '') {
-        this.form.format = format;
-        this.onEditorChange();
-        return;
-      }
-
-      // Content isn't empty. Warn.
-      this.$utils.confirm(
-        this.$t('campaigns.confirmSwitchFormat'),
-        () => {
-          this.form.format = format;
-          this.onEditorChange();
-        },
-        () => {
-          // On cancel, undo the radio selection.
-          this.form.radioFormat = this.form.format;
-        },
-      );
-    },
-
-    onEditorURLConvert(url) {
-      let u = url;
-      if (this.isTrackLink) {
-        u = `${u}@TrackLink`;
-      }
-
-      this.isTrackLink = false;
-      return u;
-    },
-
-    onRichtextViewSource() {
-      this.richTextSourceBody = this.form.body;
-      this.isRichtextSourceVisible = true;
-    },
-
-    onOpenInsertHTML() {
-      this.isInsertHTMLVisible = true;
-    },
-
-    onInsertHTML() {
-      this.isInsertHTMLVisible = false;
-      window.tinymce.editors[0].execCommand('mceInsertContent', false, this.insertHTMLSnippet);
-    },
-
-    onFormatRichtextHTML() {
-      this.richTextSourceBody = this.beautifyHTML(this.richTextSourceBody);
-    },
-
-    onSaveRichTextSource() {
-      this.form.body = this.richTextSourceBody;
-      window.tinymce.editors[0].setContent(this.form.body);
-      this.richTextSourceBody = '';
-      this.isRichtextSourceVisible = false;
-    },
-
-    onEditorDialogOpen(editor) {
-      const ed = editor;
-      const oldEd = ed.windowManager.open;
-      const self = this;
-
-      ed.windowManager.open = (t, r) => {
-        const isOK = t.initialData && 'url' in t.initialData && 'anchor' in t.initialData;
-
-        // Not the link modal.
-        if (!isOK) {
-          return oldEd.apply(this, [t, r]);
-        }
-
-        // If an existing link is being edited, check for the tracking flag `@TrackLink` at the end
-        // of the url. Remove that from the URL and instead check the checkbox.
-        let checked = false;
-        if (!t.initialData.link !== '') {
-          const t2 = t;
-          const url = t2.initialData.url.value.replace(/@TrackLink$/, '');
-
-          if (t2.initialData.url.value !== url) {
-            t2.initialData.url.value = url;
-            checked = true;
-          }
-        }
-
-        // Execute the modal.
-        const modal = oldEd.apply(this, [t, r]);
-
-        // Is it the link dialog?
-        if (isOK) {
-          // Insert tracking checkbox.
-          const c = document.createElement('input');
-          c.setAttribute('type', 'checkbox');
-
-          if (checked) {
-            c.setAttribute('checked', checked);
-          }
-
-          // Store the checkbox's state in the Vue instance to pick up from
-          // the TinyMCE link conversion callback.
-          c.onchange = (e) => {
-            self.isTrackLink = e.target.checked;
-          };
-
-          const l = document.createElement('label');
-          l.appendChild(c);
-          l.appendChild(document.createTextNode('Track link?'));
-          l.classList.add('tox-label', 'tox-track-link');
-
-          document.querySelector('.tox-form__controls-h-stack .tox-control-wrap').appendChild(l);
-        }
-        return modal;
-      };
-    },
-
     onEditorChange() {
-      if (!this.isReady) {
-        return;
-      }
-
       // The parent's v-model gets { contentType, body }.
+      this.saveDesign();
       this.$emit('input', { contentType: this.form.format, body: this.form.body });
     },
 
@@ -391,29 +210,18 @@ export default {
   },
 
   mounted() {
-    this.initRichtextEditor();
+    this.editorLoaded();
   },
 
   computed: {
     ...mapState(['serverConfig']),
-
-    // htmlFormat() {
-    //   return this.form.format;
-    // },
   },
 
   watch: {
-    // Capture contentType and body passed from the parent as props.
     contentType(f) {
       this.form.format = f;
       this.form.radioFormat = f;
 
-      if (f !== 'richtext') {
-        this.isReady = true;
-      }
-
-      // Trigger the change event so that the body and content type
-      // are propagated to the parent on first load.
       this.onEditorChange();
     },
 
@@ -425,42 +233,8 @@ export default {
     // eslint-disable-next-line func-names
     'form.body': function () {
       this.onEditorChange();
+      this.editorLoaded();
     },
-
-    // htmlFormat(to, from) {
-    //   if ((from === 'richtext' || from === 'html') && to === 'plain') {
-    //     // richtext, html => plain
-
-    //     // Preserve line breaks when converting HTML to plaintext.
-    //     const d = document.createElement('div');
-    //     d.innerHTML = this.beautifyHTML(this.form.body);
-    //     this.$nextTick(() => {
-    //       this.form.body = this.trimLines(d.innerText.trim(), true);
-    //     });
-    //   } else if ((from === 'richtext' || from === 'html') && to === 'markdown') {
-    //     // richtext, html => markdown
-    //     this.form.body = turndown.turndown(this.form.body).replace(/\n\n+/ig, '\n\n');
-    //   } else if (from === 'plain' && (to === 'richtext' || to === 'html')) {
-    //     // plain => richtext, html
-    //     this.form.body = this.form.body.replace(/\n/ig, '<br>\n');
-    //   } else if (from === 'richtext' && to === 'html') {
-    //     // richtext => html
-    //     this.form.body = this.beautifyHTML(this.form.body);
-    //   } else if (from === 'markdown' && (to === 'richtext' || to === 'html')) {
-    //     // markdown => richtext, html.
-    //     this.$api.convertCampaignContent({
-    //       id: 1, body: this.form.body, from, to,
-    //     }).then((data) => {
-    //       this.form.body = this.beautifyHTML(data.trim());
-    //       // Update the HTML editor.
-    //       if (to === 'html') {
-    //         this.updateHTMLEditor();
-    //       }
-    //     });
-    //   }
-
-    //   this.onEditorChange();
-    // },
   },
 };
 </script>
