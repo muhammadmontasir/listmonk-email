@@ -143,40 +143,46 @@ export default {
 
   methods: {
     editorLoaded() {
+      console.log(this.value.body);
       this.$refs.emailEditor.editor.loadDesign(JSON.parse(this.value.body));
+      // this.onEditorChange();
+      console.log('editorLoaded');
     },
     // called when the editor has finished loading
     editorReady() {
       // console.log('editorReady');
-    },
-
-    saveDesign() {
-      this.$refs.emailEditor.editor.saveDesign((design) => {
-        const jsonData = JSON.stringify(design, null, 2);
-        this.form.body = jsonData;
-      });
-    },
-
-    async exportHtml() {
-      return new Promise((resolve) => {
-        this.$refs.emailEditor.editor.exportHtml((data) => {
-          this.saveDesign();
-          this.form.htmlBody = data.html;
-          this.onEditorChange();
-          resolve();
-        });
-      });
+      // this.onEditorChange();
     },
 
     onEditorChange() {
       // The parent's v-model gets { contentType, body }.
-      this.saveDesign();
-      this.$emit('input', { contentType: this.form.format, body: this.form.body });
+      new Promise((resolve) => {
+        this.$refs.emailEditor.editor.saveDesign((design) => {
+        const jsonData = JSON.stringify(design, null, 2);
+        this.form.body = jsonData;
+        });
+      });
+
+      const htmlData = new Promise((resolve) => {
+        this.$refs.emailEditor.editor.exportHtml((data) => {
+          this.form.htmlBody = data.html;
+          // console.log('test');
+          resolve();
+        });
+      });
+
+      this.$emit('input', { contentType: this.form.format, body: this.form.body, htmlBody: this.form.htmlBody });
     },
 
-    async onTogglePreview() {
-      await this.exportHtml();
-      this.onEditorChange();
+    onTogglePreview() {
+      const htmlData = new Promise((resolve) => {
+        this.$refs.emailEditor.editor.exportHtml((data) => {
+          this.form.htmlBody = data.html;
+          // console.log('test');
+          resolve();
+        });
+      });
+
       this.isPreviewing = !this.isPreviewing;
     },
 
@@ -210,7 +216,7 @@ export default {
   },
 
   mounted() {
-    this.editorLoaded();
+    // this.editorLoaded();
   },
 
   computed: {
@@ -221,12 +227,13 @@ export default {
     contentType(f) {
       this.form.format = f;
       this.form.radioFormat = f;
-
+      // console.log('contentType watch');
       this.onEditorChange();
     },
 
     body(b) {
       this.form.body = b;
+      console.log('body watch...');
       this.onEditorChange();
     },
 

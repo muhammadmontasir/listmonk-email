@@ -173,8 +173,11 @@
       </b-tab-item><!-- campaign -->
 
       <b-tab-item :label="$t('campaigns.content')" icon="text" :disabled="isNew" value="content">
+        {{ form.content }}
+        data {{ data }}
         <editor
           v-model="form.content"
+          ref="editorRef"
           :id="data.id"
           :title="data.name"
           :uuid="data.uuid"
@@ -327,7 +330,7 @@ export default Vue.extend({
         lists: [],
         tags: [],
         sendAt: null,
-        content: { contentType: 'richtext', body: '' },
+        content: { contentType: 'richtext', body: '', htmlBody: '' },
         altbody: null,
         media: [],
 
@@ -431,6 +434,7 @@ export default Vue.extend({
           break;
         default:
           this.updateCampaign();
+          this.$refs.editorRef.editorLoaded();
           break;
       }
     },
@@ -438,6 +442,7 @@ export default Vue.extend({
     getCampaign(id) {
       return this.$api.getCampaign(id).then((data) => {
         this.data = data;
+        // console.log(data, this.form);
         this.form = {
           ...this.form,
           ...data,
@@ -445,8 +450,10 @@ export default Vue.extend({
           archiveMetaStr: data.archiveMeta ? JSON.stringify(data.archiveMeta, null, 4) : '{}',
 
           // The structure that is populated by editor input event.
-          content: { contentType: data.contentType, body: data.body },
+          content: { contentType: data.contentType, body: data.body, htmlBody: 'body' },
         };
+
+        // console.log('the form', this.form);
         this.isAttachFieldVisible = this.form.media.length > 0;
 
         this.form.media = this.form.media.map((f) => {
@@ -476,7 +483,7 @@ export default Vue.extend({
         tags: this.form.tags,
         template_id: this.form.templateId,
         content_type: this.form.content.contentType,
-        body: this.form.content.body,
+        body: this.form.content.htmlbody,
         altbody: this.form.content.contentType !== 'plain' ? this.form.altbody : null,
         subscribers: this.form.testEmails,
         media: this.form.media.map((m) => m.id),
@@ -512,7 +519,13 @@ export default Vue.extend({
       return false;
     },
 
+    sleep(ms) {
+      new Promise(r => setTimeout(r, ms));  
+    }, 
+
     async updateCampaign(typ) {
+      await this.$refs.editorRef.onEditorChange();
+      console.log('update', this.form.content.body);        
       const data = {
         name: this.form.name,
         subject: this.form.subject,
@@ -538,6 +551,8 @@ export default Vue.extend({
       if (typ === 'start') {
         typMsg = 'campaigns.started';
       }
+
+      
 
       // This promise is used by startCampaign to first save before starting.
       return new Promise((resolve) => {
@@ -636,6 +651,13 @@ export default Vue.extend({
     selectedLists() {
       this.form.lists = this.selectedLists;
     },
+
+    data(d) {
+      this.form.content.body = d.body;
+      // this.form.radioFormat = f;
+      console.log('data watch');
+      // this.onEditorChange();
+    },
   },
 
   mounted() {
@@ -689,6 +711,11 @@ export default Vue.extend({
     } else {
       this.form.messenger = 'email';
     }
+
+    // this.form.content.body = this.data.body;
+
+    // this.$refs.editorRef.onEditorChange();
+    // this.$refs.editorRef.editorLoaded();
 
     this.$nextTick(() => {
       this.$refs.focus.focus();
