@@ -49,6 +49,7 @@
 </template>
 
 <script>
+/* eslint-disable */
 import { mapState } from 'vuex';
 import { indent } from 'indent.js';
 import { EmailEditor } from 'vue-email-editor';
@@ -143,8 +144,14 @@ export default {
 
   methods: {
     editorLoaded() {
-      console.log(this.value.body);
-      this.$refs.emailEditor.editor.loadDesign(JSON.parse(this.value.body));
+      console.log(this.value);
+      // console.log('this.body', this.body);
+
+      new Promise ((resolve) => {
+        this.$refs.emailEditor.editor.loadDesign(JSON.parse(this.value.body));
+        resolve(); 
+      });
+      
       // this.onEditorChange();
       console.log('editorLoaded');
     },
@@ -156,14 +163,16 @@ export default {
 
     onEditorChange() {
       // The parent's v-model gets { contentType, body }.
+      console.log('on Editor change');
       new Promise((resolve) => {
         this.$refs.emailEditor.editor.saveDesign((design) => {
-        const jsonData = JSON.stringify(design, null, 2);
-        this.form.body = jsonData;
+          const jsonData = JSON.stringify(design, null, 2);
+          this.form.body = jsonData;
+          resolve();
         });
       });
 
-      const htmlData = new Promise((resolve) => {
+      new Promise((resolve) => {
         this.$refs.emailEditor.editor.exportHtml((data) => {
           this.form.htmlBody = data.html;
           // console.log('test');
@@ -172,6 +181,8 @@ export default {
       });
 
       this.$emit('input', { contentType: this.form.format, body: this.form.body, htmlBody: this.form.htmlBody });
+
+      return { contentType: this.form.format, body: this.form.body, htmlBody: this.form.htmlBody };
     },
 
     onTogglePreview() {
@@ -228,19 +239,24 @@ export default {
       this.form.format = f;
       this.form.radioFormat = f;
       // console.log('contentType watch');
-      this.onEditorChange();
+      // this.onEditorChange();
     },
 
     body(b) {
+      // console.log('in editor', this.form.body, b);
+      // console.log('>>>', this.form.body, b);
       this.form.body = b;
-      console.log('body watch...');
+      console.log('test body watch', this.form.body === b);
+      // this.editorLoaded();
+
+      // console.log('in editor body watch...', b === '');
       this.onEditorChange();
     },
 
     // eslint-disable-next-line func-names
     'form.body': function () {
-      this.onEditorChange();
-      this.editorLoaded();
+      // this.onEditorChange();
+      // this.editorLoaded();
     },
   },
 };
