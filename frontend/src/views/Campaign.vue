@@ -508,6 +508,14 @@ export default Vue.extend({
     },
 
     async sendTest() {
+      await new Promise((resolve, reject) => {
+        this.$refs.emailEditor.editor.exportHtml((data) => {
+          this.form.content.htmlBody = data.html;
+          console.log('update async', this.form.content.htmlBody);
+          resolve();
+        });
+      });
+
       const data = {
         id: this.data.id,
         name: this.form.name,
@@ -525,14 +533,6 @@ export default Vue.extend({
         subscribers: this.form.testEmails,
         media: this.form.media.map((m) => m.id),
       };
-
-      await new Promise((resolve, reject) => {
-        this.$refs.emailEditor.editor.exportHtml((data) => {
-          this.form.content.htmlBody = data.html;
-          console.log('update async', this.form.content.htmlBody);
-          resolve();
-        });
-      });
 
       this.$api.testCampaign(data).then(() => {
         this.$utils.toast(this.$t('campaigns.testSent'));
