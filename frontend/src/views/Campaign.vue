@@ -511,7 +511,6 @@ export default Vue.extend({
       await new Promise((resolve, reject) => {
         this.$refs.emailEditor.editor.exportHtml((data) => {
           this.form.content.htmlBody = data.html;
-          console.log('update async', this.form.content.htmlBody);
           resolve();
         });
       });
@@ -533,6 +532,8 @@ export default Vue.extend({
         subscribers: this.form.testEmails,
         media: this.form.media.map((m) => m.id),
       };
+
+      data.body = this.form.content.htmlBody;
 
       this.$api.testCampaign(data).then(() => {
         this.$utils.toast(this.$t('campaigns.testSent'));
