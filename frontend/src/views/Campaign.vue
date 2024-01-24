@@ -168,8 +168,16 @@
           </div>
           <template>
             <div id="builder" class="container">
-              <EmailEditor :appearance="appearance" :min-height="minHeight" :project-id="projectId" :locale="locale"
-                :tools="tools" :options="options" ref="emailEditor" v-on:load="editorLoaded" v-on:ready="editorReady"
+              <EmailEditor
+                :appearance="appearance"
+                :min-height="minHeight"
+                :project-id="projectId"
+                :locale="locale"
+                :tools="tools"
+                :options="options"
+                ref="emailEditor"
+                v-on:load="editorLoaded"
+                v-on:ready="editorReady"
                 style="height: 100vh" />
             </div>
           </template>
@@ -177,7 +185,7 @@
           <!-- campaign preview //-->
           <campaign-preview v-if="isPreviewing" @close="onTogglePreview" type="campaign" 
           :id="data.id" :title="data.name"
-            :templateId="form.templateId" :body="form.content.htmlBody"></campaign-preview>
+            :templateId="form.templateId" :body="form.content.body"></campaign-preview>
 
         </section>
         <!--        <editor-->
@@ -333,7 +341,7 @@ export default Vue.extend({
         lists: [],
         tags: [],
         sendAt: null,
-        content: { contentType: 'richtext', body: '', htmlBody: '' },
+        content: { contentType: 'richtext', altbody: '', body: '' },
         altbody: null,
         media: [],
 
@@ -346,9 +354,9 @@ export default Vue.extend({
         testEmails: [],
 
         //builder
-        body: '',
+        altbody: '',
         format: '',
-        htmlBody: '',
+        body: '',
         radioFormat: '',
       },
 
@@ -383,11 +391,11 @@ export default Vue.extend({
     },
 
     onAddAltBody() {
-      this.form.altbody = htmlToPlainText(this.form.content.body);
+      this.form.altbody = htmlToPlainText(this.form.content.altbody);
     },
 
     onRemoveAltBody() {
-      this.form.altbody = null;
+      // this.form.altbody = null;
     },
 
     onShowHeaders() {
@@ -414,7 +422,7 @@ export default Vue.extend({
     },
 
     isUnsaved() {
-      return this.data.body !== this.form.content.body
+      return this.data.altbody !== this.form.content.altbody
         || this.data.contentType !== this.form.content.contentType;
     },
 
@@ -481,16 +489,17 @@ export default Vue.extend({
           archiveMetaStr: data.archiveMeta ? JSON.stringify(data.archiveMeta, null, 4) : '{}',
 
           // The structure that is populated by editor input event.
-          content: { contentType: data.contentType, body: data.body, htmlBody: '' },
+          content: { contentType: data.contentType, altbody: data.altbody, body: '' },
         };
+        // console.log('get campaign');
+        // console.log('get campaign', this.form);
+        this.form.content.body = this.convertToHtml();
 
-        this.form.content.htmlBody = this.convertToHtml();
-
-        console.log('the form in get campaign', this.form.content.body === this.form.body);
+        // console.log('the form in get campaign', this.form.content.altbody === this.form.altbody);
 
         this.editorLoaded();
 
-        console.log('the form in get campaign', this.form.content.body === this.form.body);
+        // console.log('the form in get campaign', this.form.content.altbody === this.form.altbody);
         this.isAttachFieldVisible = this.form.media.length > 0;
 
         this.form.media = this.form.media.map((f) => {
@@ -510,7 +519,7 @@ export default Vue.extend({
     async sendTest() {
       await new Promise((resolve, reject) => {
         this.$refs.emailEditor.editor.exportHtml((data) => {
-          this.form.content.htmlBody = data.html;
+          this.form.content.body = data.html;
           resolve();
         });
       });
@@ -527,13 +536,15 @@ export default Vue.extend({
         tags: this.form.tags,
         template_id: this.form.templateId,
         content_type: this.form.content.contentType,
-        body: this.form.content.htmlbody,
-        altbody: this.form.content.contentType !== 'plain' ? this.form.altbody : null,
+        body: this.form.content.body,
+        altbody: this.form.altbody,
         subscribers: this.form.testEmails,
         media: this.form.media.map((m) => m.id),
       };
 
-      data.body = this.form.content.htmlBody;
+      data.body = this.form.content.body;
+
+      // console.log('data.body', data.body);
 
       this.$api.testCampaign(data).then(() => {
         this.$utils.toast(this.$t('campaigns.testSent'));
@@ -566,20 +577,21 @@ export default Vue.extend({
     },
 
     async updateCampaign(typ) {
-      console.log('start updating');
+      // console.log('start updating');
 
       await new Promise((resolve, reject) => {
         this.$refs.emailEditor.editor.saveDesign((design) => {
-          this.form.content.body = JSON.stringify(design, null, 2);
-          console.log('save async');
+          this.form.content.altbody = JSON.stringify(design, null, 2);
+          // console.log('save async');
+          // console.log('save async', this.form.content.altbody);
           resolve();
         });
       });
 
       await new Promise((resolve, reject) => {
         this.$refs.emailEditor.editor.exportHtml((data) => {
-          this.form.content.htmlBody = data.html;
-          console.log('update async');
+          this.form.content.body = data.html;
+          // console.log('update async');
           resolve();
         });
       });
@@ -598,14 +610,14 @@ export default Vue.extend({
         template_id: this.form.templateId,
         content_type: this.form.content.contentType,
         body: this.form.content.body,
-        altbody: this.form.content.contentType !== 'plain' ? this.form.altbody : null,
+        altbody: this.form.content.altbody,
         archive: this.form.archive,
         archive_template_id: this.form.archiveTemplateId,
         archive_meta: this.form.archiveMeta,
         media: this.form.media.map((m) => m.id),
       };
 
-      console.log('update', data.body === this.form.content.body);
+      // console.log('update', data.altbody === this.form.content.altbody);
 
       let typMsg = 'globals.messages.updated';
       if (typ === 'start') {
@@ -617,7 +629,7 @@ export default Vue.extend({
         this.$api.updateCampaign(this.data.id, data).then((d) => {
           this.data = d;
           this.$utils.toast(this.$t(typMsg, { name: d.name }));
-          console.log('promise in update');
+          // console.log('promise in update');
           resolve();
         });
       });
@@ -666,7 +678,7 @@ export default Vue.extend({
 
     // builder editor
     editorLoaded() {
-      this.$refs.emailEditor.editor.loadDesign(JSON.parse(this.form.content.body));
+      this.$refs.emailEditor.editor.loadDesign(JSON.parse(this.form.content.altbody));
     },
 
     editorReady() {
@@ -676,25 +688,25 @@ export default Vue.extend({
     convertToHtml() {
       new Promise((resolve) => {
         this.$refs.emailEditor.editor.exportHtml((data) => {
-          this.form.content.htmlBody = data.html;
+          this.form.content.body = data.html;
           resolve();
         });
       });
 
-      return this.form.content.htmlBody;
+      return this.form.content.body;
     },
 
     async onEditorChange() {
       new Promise(async (resolve) => {
         await this.$refs.emailEditor.editor.saveDesign((design) => {
-          this.form.content.body = JSON.stringify(design, null, 2);
-          console.log('this.form.content.bod editor save', this.form.content.body);
+          this.form.content.altbody = JSON.stringify(design, null, 2);
+          // console.log('this.form.content.body editor save', this.form.content.altbody);
         });
       });
 
       const htmlData = new Promise((resolve) => {
         this.$refs.emailEditor.editor.exportHtml((data) => {
-          this.form.content.htmlBody = data.html;
+          this.form.content.body = data.html;
           resolve();
         });
       });
@@ -703,7 +715,8 @@ export default Vue.extend({
     async onTogglePreview() {
       await new Promise((resolve) => {
         this.$refs.emailEditor.editor.exportHtml((data) => {
-          this.form.content.htmlBody = data.html;
+          this.form.content.body = data.html;
+          // console.log('test');
           resolve();
         });
       });
@@ -759,7 +772,7 @@ export default Vue.extend({
     },
 
     data(d) {
-      this.form.content.body = d.body;
+      this.form.content.altbody = d.altbody;
     },
   },
 
